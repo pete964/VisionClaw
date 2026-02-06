@@ -22,35 +22,8 @@ class ToolCallRouter {
           callName, callId, String(describing: call.args))
 
     let task = Task { @MainActor in
-      let result: ToolResult
-
-      switch callName {
-      case "delegate_task":
-        let taskDesc = call.args["task"] as? String ?? ""
-        result = await bridge.delegateTask(task: taskDesc, toolName: "delegate_task")
-
-      case "send_message":
-        let to = call.args["to"] as? String ?? ""
-        let message = call.args["message"] as? String ?? ""
-        let channel = call.args["channel"] as? String ?? "last"
-        let taskDesc = "Send a \(channel) message to \(to) saying: \(message)"
-        result = await bridge.delegateTask(task: taskDesc, toolName: "send_message")
-
-      case "web_search":
-        let query = call.args["query"] as? String ?? ""
-        result = await bridge.invokeTool(
-          tool: "web_search",
-          action: "json",
-          args: ["query": query]
-        )
-
-      default:
-        NSLog("[ToolCall] Unknown tool '%@', delegating as generic task", callName)
-        result = await bridge.delegateTask(
-          task: "Execute tool '\(callName)' with args: \(call.args)",
-          toolName: callName
-        )
-      }
+      let taskDesc = call.args["task"] as? String ?? String(describing: call.args)
+      let result = await bridge.delegateTask(task: taskDesc, toolName: callName)
 
       guard !Task.isCancelled else {
         NSLog("[ToolCall] Task %@ was cancelled, skipping response", callId)

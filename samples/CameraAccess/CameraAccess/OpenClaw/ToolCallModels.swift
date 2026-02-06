@@ -85,61 +85,22 @@ enum ToolCallStatus: Equatable {
 enum ToolDeclarations {
 
   static func allDeclarations() -> [[String: Any]] {
-    return [delegateTask, sendMessage, webSearch]
+    return [execute]
   }
 
-  static let delegateTask: [String: Any] = [
-    "name": "delegate_task",
-    "description": "Execute any task that requires taking action, storing data, or interacting with external services. You have no memory or storage -- this tool is your only way to do anything beyond conversation. Use for: adding to lists, setting reminders, creating notes, research, drafts, scheduling, smart home control, app interactions, or any request that has a real-world effect. When in doubt, use this tool.",
+  static let execute: [String: Any] = [
+    "name": "execute",
+    "description": "Your only way to take action. You have no memory, storage, or ability to do anything on your own -- use this tool for everything: sending messages, searching the web, adding to lists, setting reminders, creating notes, research, drafts, scheduling, smart home control, app interactions, or any request that goes beyond answering a question. When in doubt, use this tool.",
     "parameters": [
       "type": "object",
       "properties": [
         "task": [
           "type": "string",
-          "description": "Clear description of what to do, including all relevant details from the conversation"
+          "description": "Clear, detailed description of what to do. Include all relevant context: names, content, platforms, quantities, etc."
         ]
       ],
       "required": ["task"]
     ] as [String: Any],
     "behavior": "NON_BLOCKING"
-  ]
-
-  static let sendMessage: [String: Any] = [
-    "name": "send_message",
-    "description": "Send a message to someone via a messaging platform. Supports WhatsApp, Telegram, Slack, Discord, iMessage, Signal, and Teams.",
-    "parameters": [
-      "type": "object",
-      "properties": [
-        "to": [
-          "type": "string",
-          "description": "Recipient name or phone number"
-        ],
-        "message": [
-          "type": "string",
-          "description": "Message content to send"
-        ],
-        "channel": [
-          "type": "string",
-          "description": "Messaging platform to use (whatsapp, telegram, imessage, slack, discord, signal, teams)"
-        ]
-      ],
-      "required": ["to", "message"]
-    ] as [String: Any],
-    "behavior": "NON_BLOCKING"
-  ]
-
-  static let webSearch: [String: Any] = [
-    "name": "web_search",
-    "description": "Search the web for current information. Use this when the user asks about recent events, facts you are unsure about, or anything that requires up-to-date data.",
-    "parameters": [
-      "type": "object",
-      "properties": [
-        "query": [
-          "type": "string",
-          "description": "The search query"
-        ]
-      ],
-      "required": ["query"]
-    ] as [String: Any]
   ]
 }
