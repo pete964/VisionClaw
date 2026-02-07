@@ -1,81 +1,208 @@
-# Meta Wearables Device Access Toolkit for iOS
+# VisionClaw
 
-[![Swift Package](https://img.shields.io/badge/Swift_Package-0.4.0-brightgreen?logo=swift&logoColor=white)](https://github.com/facebook/meta-wearables-dat-ios/tags)
-[![Docs](https://img.shields.io/badge/API_Reference-0.4-blue?logo=meta)](https://wearables.developer.meta.com/docs/reference/ios_swift/dat/0.4)
+A real-time AI assistant for Meta Ray-Ban smart glasses. See what you see, hear what you say, and take actions on your behalf -- all through voice.
 
-The Meta Wearables Device Access Toolkit enables developers to utilize Meta's AI glasses to build hands-free wearable experiences into their mobile applications.
-By integrating this SDK, developers can reliably connect to Meta's AI glasses and leverage capabilities like video streaming and photo capture.
+Built on [Meta Wearables DAT SDK](https://github.com/facebook/meta-wearables-dat-ios) + [Gemini Live API](https://ai.google.dev/gemini-api/docs/live) + [OpenClaw](https://github.com/nichochar/openclaw) (optional).
 
-The Wearables Device Access Toolkit is in developer preview.
-Developers can access our SDK and documentation, test on supported AI glasses, and create organizations and release channels to share with test users.
+## What It Does
 
-## Documentation & Community
+Put on your glasses, tap the AI button, and talk:
 
-Find our full [developer documentation](https://wearables.developer.meta.com/docs/develop/) on the Wearables Developer Center.
+- **"What am I looking at?"** -- Gemini sees through your glasses camera and describes the scene
+- **"Add milk to my shopping list"** -- delegates to OpenClaw, which adds it via your connected apps
+- **"Send a message to John saying I'll be late"** -- routes through OpenClaw to WhatsApp/Telegram/iMessage
+- **"Search for the best coffee shops nearby"** -- web search via OpenClaw, results spoken back
 
-You can find an overview of the Wearables Developer Center [here](https://wearables.developer.meta.com/).
-Create an account to stay informed of all updates, report bugs and register your organization.
-Set up a project and release channel to share your integration with test users.
+The glasses camera streams at ~1fps to Gemini for visual context, while audio flows bidirectionally in real-time.
 
-For help, discussion about best practices or to suggest feature ideas visit our [discussions forum](https://github.com/facebook/meta-wearables-dat-ios/discussions).
+## How It Works
 
-See the [changelog](CHANGELOG.md) for the latest updates.
-
-## Including the SDK in your project
-
-The easiest way to add the SDK to your project is by using Swift Package Manager.
-
-1. In Xcode, select **File** > **Add Package Dependencies...**
-1. Search for `https://github.com/facebook/meta-wearables-dat-ios` in the top right corner
-1. Select `meta-wearables-dat-ios`
-1. Set the version to one of the [available versions](https://github.com/facebook/meta-wearables-dat-ios/tags)
-1. Click **Add Package**
-1. Select the target to which you want to add the packages
-1. Click **Add Package**
-
-## Developer Terms
-
-- By using the Wearables Device Access Toolkit, you agree to our [Meta Wearables Developer Terms](https://wearables.developer.meta.com/terms),
-  including our [Acceptable Use Policy](https://wearables.developer.meta.com/acceptable-use-policy).
-- By enabling Meta integrations, including through this SDK, Meta may collect information about how users' Meta devices communicate with your app.
-  Meta will use this information collected in accordance with our [Privacy Policy](https://www.meta.com/legal/privacy-policy/).
-- You may limit Meta's access to data from users' devices by following the instructions below.
-
-### Opting out of data collection
-
-To configure analytics settings in your Meta Wearables DAT iOS app, you can modify your app's `Info.plist` file using either of these two methods:
-
-**Method 1:** Using Xcode (Recommended)
-
-1. In Xcode, select your app target in the **Project** navigator
-1. Go to the **Info** tab
-1. Navigate to **Custom iOS Target Properties**  and find the `MWDAT` key
-1. Add a new key under `MWDAT` called `Analytics` of type `Dictionary`
-1. Add a new key to the `Analytics` dictionary called `OptOut` of type `Boolean` and set the value to `YES`
-
-**Method 2:** Direct XML editing
-
-Add or modify the following in your `Info.plist` file.
-
-```XML
-<key>MWDAT</key>
-<dict>
-    <key>Analytics</key>
-    <dict>
-        <key>OptOut</key>
-        <true/>
-    </dict>
-</dict>
+```
+Meta Ray-Ban Glasses (or iPhone camera)
+       |
+       | video frames + mic audio
+       v
+iOS App (this project)
+       |
+       | JPEG frames (~1fps) + PCM audio (16kHz)
+       v
+Gemini Live API (WebSocket)
+       |
+       |-- Audio response (PCM 24kHz) --> iOS App --> Speaker
+       |-- Tool calls (execute) -------> iOS App --> OpenClaw Gateway
+       |                                                  |
+       |                                                  v
+       |                                          56+ skills: web search,
+       |                                          messaging, smart home,
+       |                                          notes, reminders, etc.
+       |                                                  |
+       |<---- Tool response (text) <----- iOS App <-------+
+       |
+       v
+  Gemini speaks the result
 ```
 
-**Default behavior:** If the `OptOut` key is missing or set to `NO`/`<false/>`, analytics are enabled
-(i.e., you are **not** opting out). Set to `YES`/`<true/>` to disable data collection.
+**Key pieces:**
+- **Gemini Live** -- real-time voice + vision AI over WebSocket (native audio, not STT-first)
+- **OpenClaw** (optional) -- local gateway that gives Gemini access to 56+ tools and all your connected apps
+- **iPhone mode** -- test the full pipeline using your iPhone camera instead of glasses
 
-**Note:** In other words, this setting controls whether or not you're opting out of analytics:
+## Quick Start
 
-- `YES`/`<true/>` = Opt out (analytics **disabled**)
-- `NO`/`<false/>` = Opt in (analytics **enabled**)
+### 1. Clone and open
+
+```bash
+git clone https://github.com/sseanliu/VisionClaw.git
+cd VisionClaw/samples/CameraAccess
+open CameraAccess.xcodeproj
+```
+
+### 2. Add your Gemini API key
+
+Get a free API key at [Google AI Studio](https://aistudio.google.com/apikey).
+
+Open `samples/CameraAccess/CameraAccess/Gemini/GeminiConfig.swift` and replace the placeholder:
+
+```swift
+static let apiKey = "YOUR_GEMINI_API_KEY"  // <-- paste your key here
+```
+
+### 3. Build and run
+
+Select your iPhone as the target device and hit Run (Cmd+R).
+
+### 4. Try it out
+
+**Without glasses (iPhone mode):**
+1. Tap **"Start on iPhone"** -- uses your iPhone's back camera
+2. Tap the **AI button** to start a Gemini Live session
+3. Talk to the AI -- it can see through your iPhone camera
+
+**With Meta Ray-Ban glasses:**
+1. Pair your glasses via the Meta AI app (enable Developer Mode)
+2. Tap **"Start Streaming"** in the app
+3. Tap the **AI button** for voice + vision conversation
+
+## Setup: OpenClaw (Optional)
+
+OpenClaw gives Gemini the ability to take real-world actions: send messages, search the web, manage lists, control smart home devices, and more. Without it, Gemini is voice + vision only.
+
+### 1. Install and configure OpenClaw
+
+Follow the [OpenClaw setup guide](https://github.com/nichochar/openclaw). Make sure the gateway is enabled:
+
+In `~/.openclaw/openclaw.json`:
+
+```json
+{
+  "gateway": {
+    "port": 18789,
+    "bind": "lan",
+    "auth": {
+      "mode": "token",
+      "token": "your-gateway-token-here"
+    },
+    "http": {
+      "endpoints": {
+        "chatCompletions": { "enabled": true }
+      }
+    }
+  }
+}
+```
+
+Key settings:
+- `bind: "lan"` -- exposes the gateway on your local network so your iPhone can reach it
+- `chatCompletions.enabled: true` -- enables the `/v1/chat/completions` endpoint (off by default)
+- `auth.token` -- the token your iOS app will use to authenticate
+
+### 2. Configure the iOS app
+
+In `GeminiConfig.swift`, update the OpenClaw settings:
+
+```swift
+static let openClawHost = "http://Your-Mac.local"           // your Mac's Bonjour hostname
+static let openClawPort = 18789
+static let openClawGatewayToken = "your-gateway-token-here"  // must match gateway.auth.token
+```
+
+To find your Mac's Bonjour hostname: **System Settings > General > Sharing** -- it's shown at the top (e.g., `Johns-MacBook-Pro.local`).
+
+### 3. Start the gateway
+
+```bash
+openclaw gateway restart
+```
+
+Verify it's running:
+
+```bash
+curl http://localhost:18789/health
+```
+
+Now when you talk to the AI, it can execute tasks through OpenClaw.
+
+## Architecture
+
+### Key Files
+
+All source code is in `samples/CameraAccess/CameraAccess/`:
+
+| File | Purpose |
+|------|---------|
+| `Gemini/GeminiConfig.swift` | API keys, model config, system prompt |
+| `Gemini/GeminiLiveService.swift` | WebSocket client for Gemini Live API |
+| `Gemini/AudioManager.swift` | Mic capture (PCM 16kHz) + audio playback (PCM 24kHz) |
+| `Gemini/GeminiSessionViewModel.swift` | Session lifecycle, tool call wiring, transcript state |
+| `OpenClaw/ToolCallModels.swift` | Tool declarations, data types |
+| `OpenClaw/OpenClawBridge.swift` | HTTP client for OpenClaw gateway |
+| `OpenClaw/ToolCallRouter.swift` | Routes Gemini tool calls to OpenClaw |
+| `iPhone/IPhoneCameraManager.swift` | AVCaptureSession wrapper for iPhone camera mode |
+
+### Audio Pipeline
+
+- **Input**: iPhone mic -> AudioManager (PCM Int16, 16kHz mono, 100ms chunks) -> Gemini WebSocket
+- **Output**: Gemini WebSocket -> AudioManager playback queue -> iPhone speaker
+- **iPhone mode**: Uses `.voiceChat` audio session for echo cancellation + mic gating during AI speech
+- **Glasses mode**: Uses `.videoChat` audio session (mic is on glasses, speaker is on phone -- no echo)
+
+### Video Pipeline
+
+- **Glasses**: DAT SDK `videoFramePublisher` (24fps) -> throttle to ~1fps -> JPEG (50% quality) -> Gemini
+- **iPhone**: `AVCaptureSession` back camera (30fps) -> throttle to ~1fps -> JPEG -> Gemini
+
+### Tool Calling
+
+Gemini Live supports function calling. This app declares a single `execute` tool that routes everything through OpenClaw:
+
+1. User says "Add eggs to my shopping list"
+2. Gemini speaks "Sure, adding that now" (verbal acknowledgment before tool call)
+3. Gemini sends `toolCall` with `execute(task: "Add eggs to the shopping list")`
+4. `ToolCallRouter` sends HTTP POST to OpenClaw gateway
+5. OpenClaw executes the task using its 56+ connected skills
+6. Result returns to Gemini via `toolResponse`
+7. Gemini speaks the confirmation
+
+## Requirements
+
+- iOS 17.0+
+- Xcode 15.0+
+- Gemini API key ([get one free](https://aistudio.google.com/apikey))
+- Meta Ray-Ban glasses (optional -- use iPhone mode for testing)
+- OpenClaw on your Mac (optional -- for agentic actions)
+
+## Troubleshooting
+
+**"Gemini API key not configured"** -- Open `GeminiConfig.swift` and add your API key.
+
+**OpenClaw connection timeout** -- Make sure your iPhone and Mac are on the same Wi-Fi network, the gateway is running (`openclaw gateway restart`), and the hostname in `GeminiConfig.swift` matches your Mac's Bonjour name.
+
+**Echo/feedback in iPhone mode** -- The app mutes the mic while the AI is speaking. If you still hear echo, try turning down the volume.
+
+**Gemini doesn't hear me** -- Check that microphone permission is granted. The app uses aggressive voice activity detection -- speak clearly and at normal volume.
+
+For DAT SDK issues, see the [developer documentation](https://wearables.developer.meta.com/docs/develop/) or the [discussions forum](https://github.com/facebook/meta-wearables-dat-ios/discussions).
 
 ## License
 
-See the [LICENSE](LICENSE) file.
+This source code is licensed under the license found in the [LICENSE](LICENSE) file in the root directory of this source tree.
