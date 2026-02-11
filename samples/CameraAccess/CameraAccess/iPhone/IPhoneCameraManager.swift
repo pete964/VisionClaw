@@ -54,8 +54,13 @@ class IPhoneCameraManager: NSObject {
       captureSession.addOutput(videoOutput)
     }
 
-    // No hardware rotation — keep raw landscape pixels for WebRTC.
-    // UIImage orientation metadata handles portrait display in SwiftUI.
+    // Force raw landscape pixels (override iOS auto-rotation based on device orientation).
+    // UIImage orientation metadata (.right) handles portrait display in SwiftUI.
+    if let connection = videoOutput.connection(with: .video) {
+      if connection.isVideoRotationAngleSupported(0) {
+        connection.videoRotationAngle = 0
+      }
+    }
 
     captureSession.commitConfiguration()
     NSLog("[iPhoneCamera] Session configured")
