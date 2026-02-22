@@ -14,6 +14,12 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
 
+      - name: Fix Gemini model
+        run: |
+          sed -i '' 's/models\/gemini-2.5-flash-native-audio-preview-12-2025/models\/gemini-2.0-flash-live-001/g' samples/CameraAccess/CameraAccess/Gemini/GeminiConfig.swift
+          echo "Model updated to:"
+          grep "static let model" samples/CameraAccess/CameraAccess/Gemini/GeminiConfig.swift
+
       - name: Create Secrets.swift
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
