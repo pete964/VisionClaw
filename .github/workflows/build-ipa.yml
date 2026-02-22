@@ -15,18 +15,24 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode.app
 
       - name: Create Secrets.swift
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENCLAW_GATEWAY_TOKEN: ${{ secrets.OPENCLAW_GATEWAY_TOKEN }}
         run: |
-          cat > samples/CameraAccess/CameraAccess/Secrets.swift << 'EOF'
+          GEMINI=$(printf '%s' "$GEMINI_API_KEY" | tr -d '\n\r')
+          GATEWAY=$(printf '%s' "$OPENCLAW_GATEWAY_TOKEN" | tr -d '\n\r')
+          cat > samples/CameraAccess/CameraAccess/Secrets.swift << SWEOF
           import Foundation
           enum Secrets {
-            static let geminiAPIKey = "${{ secrets.GEMINI_API_KEY }}"
+            static let geminiAPIKey = "${GEMINI}"
             static let openClawHost = "https://srv1404265-1.tail1c786c.ts.net"
             static let openClawPort = 18789
             static let openClawHookToken = ""
-            static let openClawGatewayToken = "${{ secrets.OPENCLAW_GATEWAY_TOKEN }}"
+            static let openClawGatewayToken = "${GATEWAY}"
             static let webrtcSignalingURL = ""
           }
-          EOF
+          SWEOF
+          echo "Secrets.swift created OK"
 
       - name: Build (ad-hoc signed)
         run: |
